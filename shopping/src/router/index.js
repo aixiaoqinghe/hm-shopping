@@ -35,7 +35,7 @@ const router = new VueRouter({
     { path: '/searchlist', component: SearchListIndex },
     { path: '/pay', component: PayIndex },
     { path: '/myorder', component: MyOrderIndex },
-    { path: '/prodetail', component: ProDetailIndex }
+    { path: '/prodetail/:id', component: ProDetailIndex }
 
   ]
 })
