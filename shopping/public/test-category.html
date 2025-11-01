@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分类API测试</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .container {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        pre {
+            background-color: #f1f1f1;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .images-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .image-item {
+            text-align: center;
+            max-width: 120px;
+        }
+        .image-item img {
+            max-width: 100px;
+            max-height: 100px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .image-item p {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>分类API测试工具</h1>
+    
+    <div class="container">
+        <h2>1. 查看API原始数据</h2>
+        <button class="button" onclick="testCategoryAPI()">获取分类数据</button>
+        <div id="apiResponse"></div>
+    </div>
+    
+    <div class="container">
+        <h2>2. 测试图片路径</h2>
+        <div id="imagesTest"></div>
+    </div>
+    
+    <div class="container">
+        <h2>3. 图片路径字段分析</h2>
+        <div id="imageFieldsAnalysis"></div>
+    </div>
+    
+    <script>
+        // 分类API地址
+        const API_BASE_URL = 'http://smart-shop.itheima.net/index.php?s=/api';
+        
+        // 测试分类API
+        async function testCategoryAPI() {
+            try {
+                const response = await axios.get(`${API_BASE_URL}/category/list`);
+                const data = response.data;
+                
+                // 显示API响应
+                document.getElementById('apiResponse').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                
+                // 分析图片路径字段
+                analyzeImageFields(data);
+                
+                // 测试图片显示
+                testImagesDisplay(data);
+            } catch (error) {
+                document.getElementById('apiResponse').innerHTML = `<pre style="color: red;">错误: ${error.message}</pre>`;
+                console.error('API测试失败:', error);
+            }
+        }
+        
+        // 分析图片路径字段
+        function analyzeImageFields(data) {
+            let analysisHtml = '<pre>';
+            
+            if (data && (data.data || data.list)) {
+                const categories = data.data || data.list;
+                
+                if (Array.isArray(categories) && categories.length > 0) {
+                    analysisHtml += '分类数据结构分析:\n';
+                    
+                    // 遍历第一个分类的子分类
+                    if (categories[0] && categories[0].children && Array.isArray(categories[0].children)) {
+                        const firstChild = categories[0].children[0];
+                        analysisHtml += '\n第一个子分类项的所有属性:\n';
+                        analysisHtml += JSON.stringify(Object.keys(firstChild), null, 2) + '\n';
+                        
+                        analysisHtml += '\n图片相关字段检查:\n';
+                        const imageFields = ['image', 'image_url', 'img_url', 'pic_url', 'picture', 'icon'];
+                        
+                        imageFields.forEach(field => {
+                            analysisHtml += `- ${field}: ${field in firstChild ? firstChild[field] : '不存在'}\n`;
+                        });
+                    }
+                }
+            } else {
+                analysisHtml += '未找到有效的分类数据';
+            }
+            
+            analysisHtml += '</pre>';
+            document.getElementById('imageFieldsAnalysis').innerHTML = analysisHtml;
+        }
+        
+        // 测试图片显示
+        function testImagesDisplay(data) {
+            let imagesHtml = '<div class="images-container">';
+            
+            if (data && (data.data || data.list)) {
+                const categories = data.data || data.list;
+                
+                if (Array.isArray(categories) && categories.length > 0) {
+                    // 遍历几个分类的子分类来测试图片
+                    const maxCategories = Math.min(3, categories.length);
+                    
+                    for (let i = 0; i < maxCategories; i++) {
+                        const category = categories[i];
+                        
+                        if (category.children && Array.isArray(category.children)) {
+                            // 只取前几个子分类
+                            const maxChildren = Math.min(4, category.children.length);
+                            
+                            for (let j = 0; j < maxChildren; j++) {
+                                const child = category.children[j];
+                                
+                                // 尝试所有可能的图片路径字段
+                                const imagePath = child.image || child.image_url || child.img_url || child.pic_url || child.picture || child.icon || '';
+                                
+                                imagesHtml += `
+                                    <div class="image-item">
+                                        <img src="${imagePath}" alt="${child.name || '图片'}">
+                                        <p>${child.name}</p>
+                                        <p style="font-size: 10px; color: #666;">尝试路径: ${imagePath || '无'}</p>
+                                    </div>
+                                `;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            imagesHtml += '</div>';
+            document.getElementById('imagesTest').innerHTML = imagesHtml;
+        }
+    </script>
+</body>
+</html>
