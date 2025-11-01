@@ -107,7 +107,7 @@
       </div>
       <div class="num-box">
         <span>数量</span>
-        <van-stepper v-model="number" :min="1" :max="detail.stock_total" />
+        <CountBox v-model="addCount"></CountBox>
       </div>
       <div class="showbtn" v-if="detail.stock_total > 0">
         <div class="btn" v-if="mode === 'cart' ">加入购物车</div>
@@ -121,13 +121,15 @@
 
 <script>
 import { getProComments, getProDetail } from '@/api/product'
-import { Stepper } from 'vant'
+// import { Stepper } from 'vant'
 import defaultImg from '@/assets/default-avatar.png'
+import CountBox from '@/components/CountBox.vue'
 
 export default {
   name: 'ProDetail',
   components: {
-    VanStepper: Stepper
+    // VanStepper: Stepper,
+    CountBox
   },
   data () {
     return {
@@ -142,7 +144,8 @@ export default {
       defaultImg,
       mode: 'cart',
       showPannel: false,
-      number: 1
+      number: 1,
+      addCount: 1
     }
   },
   async created () {
