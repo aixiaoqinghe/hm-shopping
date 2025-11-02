@@ -70,4 +70,30 @@ router.beforeEach((to, from, next) => {
   }
 })
 
+// 全局处理Vue Router重复导航错误
+const originalPush = VueRouter.prototype.push
+VueRouter.prototype.push = function push (location) {
+  return originalPush.call(this, location).catch(err => {
+    // 忽略重复导航错误
+    if (err.name === 'NavigationDuplicated') {
+      return Promise.resolve(err)
+    }
+    // 重新抛出其他错误
+    return Promise.reject(err)
+  })
+}
+
+// 同样为replace方法添加错误处理
+const originalReplace = VueRouter.prototype.replace
+VueRouter.prototype.replace = function replace (location) {
+  return originalReplace.call(this, location).catch(err => {
+    // 忽略重复导航错误
+    if (err.name === 'NavigationDuplicated') {
+      return Promise.resolve(err)
+    }
+    // 重新抛出其他错误
+    return Promise.reject(err)
+  })
+}
+
 export default router
