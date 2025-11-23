@@ -1,4 +1,4 @@
-import { getCartList } from '@/api/cart'
+import { getCartList, changeCount } from '@/api/cart'
 
 export default {
   namespaced: true,
@@ -11,6 +11,23 @@ export default {
     // 提供一个设置cartList的mutation
     setCartList (state, newList) {
       state.cartList = newList
+    },
+    toggleCheck (state, goodsId) {
+      // 对应的 id 的项的状态取反
+      const goods = state.cartList.find(item => item.goods_id === goodsId)
+      goods.isChecked = !goods.isChecked
+    },
+    toggleAllCheck (state, flag) {
+      // 让所有的小选框，同步设置
+      state.cartList.forEach(item => {
+        item.isChecked = flag
+      })
+    },
+    changeCount (state, { goodsId, goodsNum }) {
+      const goods = state.cartList.find(item => item.goods_id === goodsId)
+      if (goods) {
+        goods.goods_num = goodsNum
+      }
     }
   },
   actions: {
@@ -23,7 +40,44 @@ export default {
         item.isChecked = true
       })
       context.commit('setCartList', data.list)
+    },
+    async changeCountAction (context, obj) {
+      const { goodsNum, goodsId, goodsSkuId } = obj
+      // 先本地修改
+      context.commit('changeCount', { goodsId, goodsNum })
+      // 再同步到后台
+
+      // 调用API更新数量
+      await changeCount(goodsId, goodsNum, goodsSkuId)
+      // 重新获取购物车数据以更新本地状态
+      context.dispatch('getCartAction')
     }
   },
-  getters: {}
+  getters: {
+    // 求所有的商品累加总数
+    cartTotal (state) {
+      return state.cartList.reduce((sum, item) => sum + item.goods_num, 0)
+    },
+    // 选中的商品项
+    selCartList (state) {
+      return state.cartList.filter(item => item.isChecked)
+    },
+    // 选中的总数
+    selCount (state, getters) {
+      return getters.selCartList.reduce((sum, item) => sum + item.goods_num, 0)
+    },
+    // 选中的总价
+    selPrice (state, getters) {
+      return getters.selCartList.reduce((sum, item) => {
+        // 确保item.goods存在且price有效，避免NaN
+        const price = item.goods?.goods_price_min || 0
+        const num = item.goods_num || 0
+        return sum + Number(price) * Number(num)
+      }, 0).toFixed(2)
+    },
+    // 是否全选
+    isAllChecked (state) {
+      return state.cartList.every(item => item.isChecked)
+    }
+  }
 }
